@@ -1,0 +1,4 @@
+requests==2.32.3
+argparse==1.4.0
+tqdm==4.67.0
+DateTime==5.5

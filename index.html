@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pip Time Machine</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⏱️</text></svg>">
+  <style>
+    :root {
+      --primary-color: #343541;
+      --text-color: #343541;
+      --background-color: #ffffff;
+      --border-color: #e5e5e5;
+      --hover-color: #f7f7f8;
+      --shadow-color: rgba(0, 0, 0, 0.05);
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: var(--font-family);
+      color: var(--text-color);
+      background-color: var(--background-color);
+      line-height: 1.6;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 10px;
+      color: var(--primary-color);
+    }
+    
+    .description {
+      font-size: 1.1rem;
+      color: #6e6e80;
+      max-width: 600px;
+      margin: 0 auto 20px auto;
+      line-height: 1.5;
+    }
+    
+    .container {
+      background-color: var(--background-color);
+      border-radius: 8px;
+      box-shadow: 0 2px 10px var(--shadow-color);
+      padding: 24px;
+      margin-bottom: 24px;
+      border: 1px solid var(--border-color);
+    }
+    
+    form p {
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+    
+    textarea, input[type="text"], input[type="date"] {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-family: var(--font-family);
+      font-size: 1rem;
+      margin-bottom: 16px;
+      transition: border-color 0.2s;
+    }
+    
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+    
+    textarea:focus, input:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+    
+    .date-container {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    
+    .date-container input[type="date"] {
+      flex-grow: 1;
+      margin-bottom: 0;
+    }
+    
+    .today-btn {
+      background-color: #f0f0f0;
+      color: var(--text-color);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 0 12px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    
+    .today-btn:hover {
+      background-color: #e0e0e0;
+    }
+    
+    button {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 16px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    
+    button:hover {
+      background-color: #1e1e24;
+    }
+    
+    .output-container {
+      background-color: var(--background-color);
+      border-radius: 8px;
+      box-shadow: 0 2px 10px var(--shadow-color);
+      padding: 24px;
+      margin-top: 24px;
+      border: 1px solid var(--border-color);
+    }
+    
+    .output-container h2 {
+      margin-bottom: 12px;
+      font-size: 1.2rem;
+      color: var(--text-color);
+    }
+    
+    .output-wrapper {
+      position: relative;
+      background-color: #f9f9f9;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      min-height: 100px;
+    }
+    
+    #output {
+      font-family: monospace;
+      white-space: pre-wrap;
+      overflow-x: auto;
+      padding: 16px;
+      min-height: 100px;
+      width: 100%;
+    }
+    
+    .copy-icon {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background-color: transparent;
+      border: none;
+      cursor: pointer;
+      opacity: 0.6;
+      transition: opacity 0.2s;
+      padding: 4px;
+      border-radius: 4px;
+    }
+    
+    .copy-icon:hover {
+      opacity: 1;
+      background-color: rgba(0, 0, 0, 0.05);
+    }
+    
+    .copy-icon svg {
+      width: 18px;
+      height: 18px;
+      fill: var(--text-color);
+    }
+    
+    #status {
+      padding: 10px;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    
+    footer {
+      text-align: center;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-color);
+      color: #6e6e80;
+      font-size: 0.9rem;
+    }
+    
+    footer a {
+      color: var(--primary-color);
+      text-decoration: none;
+    }
+    
+    footer a:hover {
+      text-decoration: underline;
+    }
+    
+    .tooltip {
+      position: absolute;
+      background-color: #343541;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      top: -24px;
+      right: 0;
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
+    }
+    
+    .copy-icon:hover .tooltip {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Pip Time Machine ⏱️</h1>
+  </header>
+
+  <div class="description">
+    <p>Pip Time Machine helps you find package versions that were available on a specific date. Simply enter your requirements and a target date to get compatible package versions for reproducible environments.</p>
+  </div>
+
+  <main>
+    <div class="container">
+      <form id="requirements-form">
+        <p>Paste your requirements here:</p>
+        <textarea id="requirements-input" placeholder="e.g. requests&#10;numpy&#10;pandas"></textarea>
+        
+        <p>Enter a target date (YYYY-MM-DD):</p>
+        <div class="date-container">
+          <input id="date-input" type="date" required />
+          <button type="button" class="today-btn" id="today-btn">Today</button>
+        </div>
+        
+        <button id="process-btn" type="submit">Process Requirements</button>
+      </form>
+    </div>
+
+    <div class="status-container">
+      <div id="status"></div>
+    </div>
+    
+    <div class="output-container">
+      <h2>Output</h2>
+      <div class="output-wrapper">
+        <pre id="output"></pre>
+        <button class="copy-icon" onclick="copyOutput()" aria-label="Copy to clipboard">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+          </svg>
+          <span class="tooltip" id="copy-tooltip">Copy to clipboard</span>
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>
+      <a href="https://github.com/f3dai/pip-time-machine" target="_blank">View on GitHub</a> | 
+      <a href="https://github.com/f3dai/pip-time-machine/issues" target="_blank">Report Issues</a>
+    </p>
+  </footer>
+
+  <script src="static/js/app.js"></script>
+  <script>
+    // Set today button functionality
+    document.getElementById('today-btn').addEventListener('click', function() {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      document.getElementById('date-input').value = `${year}-${month}-${day}`;
+    });
+    
+    function copyOutput() {
+      const outputText = document.getElementById('output').textContent;
+      if (outputText.trim()) {
+        navigator.clipboard.writeText(outputText)
+          .then(() => {
+            const tooltip = document.getElementById('copy-tooltip');
+            const originalText = tooltip.textContent;
+            tooltip.textContent = 'Copied!';
+            setTimeout(() => {
+              tooltip.textContent = originalText;
+            }, 2000);
+          })
+          .catch(err => {
+            console.error('Failed to copy: ', err);
+          });
+      }
+    }
+  </script>
+</body>
+</html>

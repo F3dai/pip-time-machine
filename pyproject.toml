@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pip-time-machine"
+version = "2.0.0"
+description = "Find Python package versions available on a specific date."
+readme = "README.md"
+requires-python = ">=3.8"
+license = { file = "LICENSE" }
+authors = [{ name = "f3dai" }]
+keywords = ["pip", "pypi", "requirements", "dependencies", "versions"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Software Development :: Build Tools",
+]
+dependencies = [
+    "requests>=2.31",
+    "tqdm>=4.66",
+    "packaging>=23.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
+[project.urls]
+Homepage = "https://github.com/f3dai/pip-time-machine"
+
+[project.scripts]
+pip-time-machine = "get_versions:main"
+
+[tool.setuptools]
+py-modules = ["get_versions"]

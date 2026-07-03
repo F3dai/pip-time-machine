@@ -9,6 +9,7 @@ Available as both a command-line tool and a web interface.
 - **Single Package Version**: Retrieve the version of a package available as of a specific date.
 - **Requirements File**: Generate a new `requirements.txt` with versions available on the specified date.
 - **Web Interface**: Use the tool directly in your browser with no installation required.
+- **Sensible defaults**: Yanked releases are skipped, and pre-releases are excluded unless you opt in with `--pre`.
 
 ## Web Interface
 
@@ -20,7 +21,13 @@ For those who prefer using the command line, you can run the Python script direc
 
 ### Installation
 
-Clone this repository and install dependencies:
+Install as a command (recommended):
+
+```bash
+pipx install git+https://github.com/f3dai/pip-time-machine.git
+```
+
+This provides a `pip-time-machine` command. Or clone and install dependencies to run the script directly:
 
 ```bash
 git clone https://github.com/f3dai/pip-time-machine.git
@@ -28,13 +35,13 @@ cd pip-time-machine
 pip install -r requirements.txt
 ```
 
-### Requirements:
-
-- requests
-- tqdm
-- DateTime
+Dependencies: `requests`, `tqdm`, `packaging`.
 
 ### CLI Commands
+
+Dates use ISO format (`YYYY-MM-DD`). Month-name formats such as `12 Jul 2023`
+are also accepted. Examples below use `python get_versions.py`; if you
+installed with pipx, use `pip-time-machine` instead.
 
 Get help:
 ```bash
@@ -43,25 +50,30 @@ python get_versions.py -h
 
 Get a single package version:
 ```bash
-python get_versions.py <package_name> <DD-MM-YYYY>
+python get_versions.py <package_name> <YYYY-MM-DD>
 ```
 
 Example:
 ```bash
-python get_versions.py pandas 12-07-2023
+python get_versions.py pandas 2023-07-12
 ```
 
 Generate a requirements file with pinned versions:
 ```bash
-python get_versions.py /path/to/requirements.txt <DD-MM-YYYY> [--output output_path.txt]
+python get_versions.py /path/to/requirements.txt <YYYY-MM-DD> [--output output_path.txt]
 ```
 
 Example:
 ```bash
-python get_versions.py requirements.txt 12-07-2023
+python get_versions.py requirements.txt 2023-07-12
 ```
 
-By default, the output file will be named `requirements_<DD-MM-YYYY>.txt`. Use the `--output` parameter to specify a different output path.
+By default, the output file will be named `requirements_<YYYY-MM-DD>.txt`. Use the `--output` parameter to specify a different output path.
+
+Additional options:
+
+- `-s, --specifier` — version specifier to emit (`==`, `>=`, `~=`, `<=`; default `==`).
+- `--pre` — include pre-release versions (excluded by default).
 
 ## How It Works
 
@@ -71,6 +83,19 @@ The tool queries the PyPI JSON API to find package release dates and selects the
 
 This isn't a robust solution and can be slow for packages with many releases. It's intended as a helpful utility rather than a production-grade dependency resolver.
 
+## Development
+
+Install with dev dependencies and run the test suite:
+
+```bash
+pip install -e ".[dev]"
+pytest
+```
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+Released under the [MIT License](LICENSE).

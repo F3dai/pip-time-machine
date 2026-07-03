@@ -9,13 +9,17 @@ from datetime import datetime
 from pathlib import Path
 
 import requests
+from packaging.version import InvalidVersion, Version
 from tqdm import tqdm
 
 VERSION_CACHE = {}
 
+# Only unambiguous formats. ISO (YYYY-MM-DD) is the documented default;
+# numeric formats where day/month order is ambiguous (e.g. 03/04/2023) are
+# intentionally excluded so a date is never silently misread.
 DATE_FORMATS = [
-    "%Y-%m-%d", "%d-%m-%Y", "%m/%d/%Y", "%d/%m/%Y",
-    "%Y/%m/%d", "%b %d %Y", "%B %d %Y", "%d %b %Y", "%d %B %Y",
+    "%Y-%m-%d", "%Y/%m/%d",
+    "%b %d %Y", "%B %d %Y", "%d %b %Y", "%d %B %Y",
 ]
 
 
@@ -41,9 +45,21 @@ def is_requirement(line):
     return line and not line.startswith(('#', '-', 'git+'))
 
 
-def get_version(package_name, target_date):
-    """Fetch the version of a package available on a specific date from PyPI."""
-    cache_key = f"{package_name}_{target_date.strftime('%Y-%m-%d')}"
+def is_prerelease(version):
+    """Return True if a version string is a PEP 440 pre-release/dev release."""
+    try:
+        return Version(version).is_prerelease
+    except InvalidVersion:
+        return False
+
+
+def get_version(package_name, target_date, include_pre=False):
+    """Fetch the version of a package available on a specific date from PyPI.
+
+    Skips yanked releases, and pre-release versions unless include_pre is set.
+    Selects the release with the most recent upload time on or before the date.
+    """
+    cache_key = f"{package_name}_{target_date.strftime('%Y-%m-%d')}_{include_pre}"
     if cache_key in VERSION_CACHE:
         return VERSION_CACHE[cache_key]
 
@@ -53,8 +69,6 @@ def get_version(package_name, target_date):
             timeout=10
         )
 
-        if response.status_code == 404:
-            return None
         if response.status_code != 200:
             return None
 
@@ -63,17 +77,20 @@ def get_version(package_name, target_date):
         latest_date = None
 
         for version, releases in data.get("releases", {}).items():
+            if not include_pre and is_prerelease(version):
+                continue
             for release in releases:
+                if release.get("yanked"):
+                    continue
                 try:
-                    release_date = datetime.fromisoformat(
-                        release["upload_time"].replace("Z", "+00:00")
-                    )
-                    if release_date <= target_date:
-                        if not latest_date or release_date > latest_date:
-                            latest_date = release_date
-                            latest_version = version
+                    # PyPI's upload_time is a naive UTC timestamp.
+                    release_date = datetime.fromisoformat(release["upload_time"])
                 except (KeyError, ValueError):
                     continue
+                if release_date <= target_date:
+                    if not latest_date or release_date > latest_date:
+                        latest_date = release_date
+                        latest_version = version
 
         VERSION_CACHE[cache_key] = latest_version
         return latest_version
@@ -82,7 +99,7 @@ def get_version(package_name, target_date):
         return None
 
 
-def process_file(input_path, target_date, output_path, specifier):
+def process_file(input_path, target_date, output_path, specifier, include_pre=False):
     """Process a requirements file."""
     lines = Path(input_path).read_text().splitlines()
     results = []
@@ -97,7 +114,7 @@ def process_file(input_path, target_date, output_path, specifier):
             results.append(line)
             continue
 
-        version = get_version(pkg, target_date)
+        version = get_version(pkg, target_date, include_pre)
         if version:
             results.append(f"{pkg}{specifier}{version}")
         else:
@@ -124,6 +141,11 @@ def main():
         "-o", "--output",
         help="Output file (default: requirements_DATE.txt)"
     )
+    parser.add_argument(
+        "--pre",
+        action="store_true",
+        help="Include pre-release versions (excluded by default)"
+    )
 
     args = parser.parse_args()
 
@@ -137,10 +159,10 @@ def main():
 
     if target_path.is_file():
         output = args.output or f"requirements_{args.date}.txt"
-        process_file(target_path, target_date, output, args.specifier)
+        process_file(target_path, target_date, output, args.specifier, args.pre)
     else:
         # Single package
-        version = get_version(args.target, target_date)
+        version = get_version(args.target, target_date, args.pre)
         if version:
             print(f"{args.target}{args.specifier}{version}")
         else:
